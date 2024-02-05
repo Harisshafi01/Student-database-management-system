@@ -1,0 +1,314 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Channels;
+using System.Xml.Linq;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        string desktopPath = @"C:\Users\HARRY\Desktop";
+        string filePath = Path.Combine(desktopPath, "Student_Database.txt");
+
+        bool again = true;
+        List<string> studentsData = new List<string>();
+
+        do
+        {
+            Program pg = new Program();
+            Random rand = new Random();
+            int ranum = rand.Next(1000, 9999);
+            string stuid = "STU" + ranum;
+            Console.WriteLine("\n   STUDENT DATA MANAGEMENT\n");
+            Console.Write("'C' to create file Enter\n\n" +
+                "'F' to find student\n\n" +
+                "'W' to view all students\n\n" +
+                "'E' to Exit\n\n" +
+                " Enter Your Choice : ");
+            string create = Console.ReadLine().ToUpper();
+
+            switch (create)
+            {
+                case "C":
+                    Console.Clear();
+                    Console.WriteLine("Enter student information :");
+                    Console.Write("First Name  : ");
+                    string fname = Validation();
+
+                    Console.Write("Middle Name : ");
+                    string mname = Validation();
+
+                    Console.Write("Last Name   : ");
+                    string lname = Validation();
+
+                    Console.Write("Age         : ");
+                    int age = AgeValidation();
+
+                    Console.Write("Parentage   : ");
+                    string parentage = Validation();
+
+                    Console.Write("Address     : ");
+                    string address = Console.ReadLine();
+                    Console.Write("Contact     : ");
+                    double contact = ContactValidation();
+
+                    //email
+                    string email = ValidEmail();
+
+                    studentsData.Add($"STUID:{stuid} ," +
+                        $" First Name:{fname} ," +
+                        $" Middle Name:{mname} ," +
+                        $" Last Name:{lname} ," +
+                        $" Age:{age} ," +
+                        $" Parentage:{parentage} ," +
+                        $" Address:{address} ," +
+                        $" Contact:{contact}," +
+                        $" Email:{email}");
+
+                    Console.WriteLine("Student id is :" + stuid);
+                    File.AppendAllLines(filePath, studentsData);
+
+                    Console.Write("Saving Data");
+                    pg.Dots();
+                    Console.WriteLine();
+                    Console.WriteLine($"Data Has Been Saved");
+                    Thread.Sleep(2000);
+                    Console.Clear();
+                    break;
+
+                case "F":
+                    Console.Clear();
+                    Console.Write("Enter Student Id To Search: ");
+                    string searchStudent = Console.ReadLine().ToUpper();
+                    Console.Clear();
+                    Console.Write("Searching");
+                    pg.Dots();
+                    Console.Clear();
+                    if (File.Exists(filePath))
+                    {
+                        string[] lines = File.ReadAllLines(filePath);
+                        bool countStd = false;
+                        foreach (string line in lines)
+                        {
+                            string[] parts = line.Split(',');
+
+                            if (parts.Length > 0 && parts[0].Contains(searchStudent))
+                            {
+                                Console.Clear();
+                                Console.WriteLine("\t\t\t\t\tStudent Found");
+                                Console.WriteLine("Student ID {0}: {1}\n", searchStudent, line + "\n");
+                                countStd = true;
+                                break;
+                            }
+                        }
+
+                        if (!countStd)
+                        {
+                            Console.WriteLine("Student with ID {0} not found.", searchStudent);
+                        }
+
+                    }
+                    else
+                    {
+                        Console.WriteLine("File not found at path: ");
+                    }
+                    break;
+
+                case "W":
+                    if (File.Exists(filePath))
+                    {
+                        string data = File.ReadAllText(filePath);
+                        Console.Clear();
+                        Console.WriteLine("\t\t\t\t\t\tALL STUDENTS DATA\n" + data);
+                    }
+                    else
+                    {
+                        Console.WriteLine("File not found at path: ");
+                    }
+                    break;
+
+                default:
+                    again = false;
+                    break;
+            }
+        } while (again);
+    }
+    void Dots()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            Console.Write(".");
+            Thread.Sleep(500);
+        }
+    }
+
+    static string Validation()
+    {
+        string name = "";
+        ConsoleKeyInfo keyInfo;
+        do
+        {
+            keyInfo = Console.ReadKey(intercept: false);
+            char currentChar = keyInfo.KeyChar;
+
+            if (char.IsLetter(currentChar)
+                || string.IsNullOrWhiteSpace(name)
+                || keyInfo.Key == ConsoleKey.Enter
+                || (char.IsWhiteSpace(currentChar))
+                || keyInfo.Key == ConsoleKey.Backspace)
+                if (keyInfo.Key == ConsoleKey.Backspace)
+                {
+
+                    if (name.Length > 0)
+                    {
+                        name = name.Substring(0, name.Length - 1);
+                        Console.Write(" \b");
+                    }
+                }
+                else
+                {
+                    name += currentChar;
+                }
+            else
+            {
+                Console.WriteLine("\nInvalid character. Please enter only letters.\n");
+                name = "";
+                Console.Write("Enter again: ");
+            }
+        } while (keyInfo.Key != ConsoleKey.Enter);
+        Console.WriteLine();
+        return name.Trim();
+    }
+    static int AgeValidation()
+    {
+        int age = 0;
+        string input = "";
+
+        ConsoleKeyInfo keyInfo;
+        do
+        {
+            keyInfo = Console.ReadKey(intercept: true);
+            char currentChar = keyInfo.KeyChar;
+
+            if (char.IsDigit(currentChar) || keyInfo.Key == ConsoleKey.Backspace)
+            {
+                if (keyInfo.Key != ConsoleKey.Backspace)
+                {
+                    input += currentChar;
+                    Console.Write(currentChar);
+                }
+                else if (input.Length > 0)
+                {
+                    input = input.Remove(input.Length - 1);
+                    Console.Write("\b \b");
+                }
+            }
+            else if (keyInfo.Key == ConsoleKey.Enter)
+            {
+                if (int.TryParse(input, out int result))
+                {
+                    age = result;
+                }
+                else
+                {
+                    Console.WriteLine("\nInvalid input. Please enter a valid age.\n");
+                    Console.Write("Age     : ");
+                    input = "";
+                }
+            }
+            else
+            {
+                Console.WriteLine("\nInvalid character. Please enter only digits.\n");
+                Console.Write("Age     : ");
+                input = "";
+            }
+
+        } while (keyInfo.Key != ConsoleKey.Enter);
+
+        Console.WriteLine();
+        return age;
+    }
+
+    static double ContactValidation()
+    {
+        double Contact = 0;
+        string input = "";
+
+        ConsoleKeyInfo keyInfo;
+        do
+        {
+            keyInfo = Console.ReadKey(intercept: true);
+            char currentChar = keyInfo.KeyChar;
+
+            if (char.IsDigit(currentChar) || keyInfo.Key == ConsoleKey.Backspace)
+            {
+                if (keyInfo.Key != ConsoleKey.Backspace)
+                {
+                    input += currentChar;
+                    Console.Write(currentChar);
+                }
+                else if (input.Length > 0)
+                {
+                    input = input.Remove(input.Length - 1);
+                    Console.Write("\b \b");
+                }
+            }
+            else if (keyInfo.Key == ConsoleKey.Enter)
+            {
+                if (double.TryParse(input, out double result))
+                {
+                    Contact = result;
+                }
+                else
+                {
+                    Console.WriteLine("\nInvalid input. Please enter a valid contact.\n");
+                    Console.Write("Contact     : ");
+                    input = "";
+                }
+            }
+            else
+            {
+                Console.WriteLine("\nInvalid character. Please enter only digits.\n");
+                Console.Write("Contact     : ");
+                input = "";
+            }
+
+        } while (keyInfo.Key != ConsoleKey.Enter);
+
+        Console.WriteLine();
+        return Contact;
+    }
+
+    static bool IsValidEmail(string email)
+    {
+        string pattern = @"^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$";
+        Regex regex = new Regex(pattern);
+        return regex.IsMatch(email);
+    }
+
+    static string ValidEmail()
+    {
+        string email;
+        while (true)
+        {
+            Console.Write("Email       : ");
+            email = Console.ReadLine();
+
+            if (IsValidEmail(email))
+            {
+
+                break;
+            }
+            else
+            {
+                Console.WriteLine("This is not a valid Email. Please try again.");
+            }
+        }
+        return email;
+    }
+
+}
